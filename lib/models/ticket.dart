@@ -1,3 +1,5 @@
+import 'package:ticket_app/models/user.dart';
+
 /// Modelo de Ticket que refleja la entidad Java del backend.
 /// 
 /// Incluye métodos fromJson y toJson para serialización/deserialización
@@ -21,6 +23,9 @@ class Ticket {
   /// Fecha y hora de creación del ticket
   final DateTime? fechaCreacion;
 
+  /// Usuario que creó el ticket (opcional)
+  final User? usuario;
+
   Ticket({
     this.id,
     required this.titulo,
@@ -28,6 +33,7 @@ class Ticket {
     required this.prioridad,
     required this.estado,
     this.fechaCreacion,
+    this.usuario,
   });
 
   /// Crea un Ticket desde un JSON recibido de la API
@@ -40,6 +46,9 @@ class Ticket {
       estado: Estado.fromString(json['estado'] as String),
       fechaCreacion: json['fechaCreacion'] != null
           ? DateTime.parse(json['fechaCreacion'] as String)
+          : null,
+      usuario: json['usuario'] != null
+          ? User.fromJson(json['usuario'] as Map<String, dynamic>)
           : null,
     );
   }
@@ -54,6 +63,7 @@ class Ticket {
       'estado': estado.toJson(),
       if (fechaCreacion != null)
         'fechaCreacion': fechaCreacion!.toIso8601String(),
+      if (usuario != null) 'usuario': {'id': usuario!.id},
     };
   }
 
