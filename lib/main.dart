@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ticket_app/models/ticket.dart';
 import 'package:ticket_app/services/ticket_service.dart';
 import 'package:ticket_app/screens/create_ticket_screen.dart';
+import 'package:ticket_app/screens/login_screen.dart';
 
 void main() {
   runApp(const TicketApp());
@@ -18,7 +20,7 @@ class TicketApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const TicketListScreen(),
+      home: const LoginScreen(),
     );
   }
 }
@@ -32,11 +34,20 @@ class TicketListScreen extends StatefulWidget {
 
 class _TicketListScreenState extends State<TicketListScreen> {
   late Future<List<Ticket>> _ticketsFuture;
+  String _userName = '';
 
   @override
   void initState() {
     super.initState();
     _ticketsFuture = TicketService.fetchTickets();
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('user_nombre') ?? 'Usuario';
+    });
   }
 
   /// Refresca la lista de tickets
@@ -44,6 +55,20 @@ class _TicketListScreenState extends State<TicketListScreen> {
     setState(() {
       _ticketsFuture = TicketService.fetchTickets();
     });
+  }
+
+  /// Cierra sesión y regresa al login
+  Future<void> _logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const LoginScreen(),
+        ),
+      );
+    }
   }
 
   @override
@@ -58,11 +83,34 @@ class _TicketListScreenState extends State<TicketListScreen> {
             onPressed: _refreshTickets,
             tooltip: 'Refrescar',
           ),
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: _logout,
+            tooltip: 'Cerrar Sesión',
+          ),
         ],
       ),
-      body: FutureBuilder<List<Ticket>>(
-        future: _ticketsFuture,
-        builder: (context, snapshot) {
+      body: Column(
+        children: [
+          // Mensaje de bienvenida
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            color: Theme.of(context).colorScheme.primaryContainer,
+            child: Text(
+              'Bienvenido, $_userName',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
+            ),
+          ),
+          // Lista de tickets
+          Expanded(
+            child: FutureBuilder<List<Ticket>>(
+              future: _ticketsFuture,
+              builder: (context, snapshot) {
           // Estado de carga
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
@@ -172,6 +220,9 @@ class _TicketListScreenState extends State<TicketListScreen> {
             ),
           );
         },
+      ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {

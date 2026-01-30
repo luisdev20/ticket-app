@@ -144,6 +144,52 @@ class UserService {
       throw UserServiceException('Error inesperado: $e');
     }
   }
+  
+  /// Autentica un usuario con email y password
+  /// 
+  /// Parámetros:
+  /// - [email]: El email del usuario
+  /// - [password]: La contraseña del usuario
+  /// 
+  /// Retorna el [User] autenticado o lanza una excepción si las credenciales son inválidas.
+  static Future<User> login(String email, String password) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/login'),
+        headers: _headers,
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        // Decodificar el JSON del usuario autenticado
+        final Map<String, dynamic> jsonResponse = 
+            json.decode(utf8.decode(response.bodyBytes));
+        
+        return User.fromJson(jsonResponse);
+      } else if (response.statusCode == 401) {
+        throw UserServiceException(
+          'Credenciales inválidas',
+          statusCode: 401,
+        );
+      } else {
+        throw UserServiceException(
+          'Error al autenticar: ${response.statusCode}',
+          statusCode: response.statusCode,
+          responseBody: response.body,
+        );
+      }
+    } on SocketException {
+      throw UserServiceException(
+        'No se pudo conectar al servidor. Verifica que el backend esté corriendo en $baseUrl',
+      );
+    } catch (e) {
+      if (e is UserServiceException) rethrow;
+      throw UserServiceException('Error inesperado: $e');
+    }
+  }
 }
 
 /// Excepción personalizada para errores del servicio de usuarios

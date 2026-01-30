@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ticket_app/models/ticket.dart';
 import 'package:ticket_app/models/user.dart';
 import 'package:ticket_app/services/ticket_service.dart';
-import 'package:ticket_app/services/user_service.dart';
 
 class CreateTicketScreen extends StatefulWidget {
   const CreateTicketScreen({super.key});
@@ -18,38 +18,23 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   
   Prioridad _prioridadSeleccionada = Prioridad.media;
   Estado _estadoSeleccionado = Estado.abierto;
-  User? _usuarioSeleccionado;
-  List<User> _usuarios = [];
   bool _isLoading = false;
-  bool _isLoadingUsers = true;
+  int? _loggedInUserId;
 
   @override
   void initState() {
     super.initState();
-    _cargarUsuarios();
+    _loadLoggedInUser();
   }
 
-  Future<void> _cargarUsuarios() async {
-    try {
-      final usuarios = await UserService.fetchUsers();
-      setState(() {
-        _usuarios = usuarios;
-        _isLoadingUsers = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoadingUsers = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al cargar usuarios: $e'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-    }
+  Future<void> _loadLoggedInUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _loggedInUserId = prefs.getInt('user_id');
+    });
   }
+
+
 
   @override
   void dispose() {
@@ -72,7 +57,9 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       descripcion: _descripcionController.text.trim(),
       prioridad: _prioridadSeleccionada,
       estado: _estadoSeleccionado,
-      usuario: _usuarioSeleccionado,
+      usuario: _loggedInUserId != null 
+          ? User(id: _loggedInUserId, nombre: '', email: '', rol: Rol.cliente)
+          : null,
     );
 
     try {
@@ -239,63 +226,6 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                       }
                     },
             ),
-            const SizedBox(height: 16),
-
-            // Selector de Usuario
-            _isLoadingUsers
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: CircularProgressIndicator(),
-                    ),
-                  )
-                : DropdownButtonFormField<User>(
-                    value: _usuarioSeleccionado,
-                    decoration: const InputDecoration(
-                      labelText: 'Usuario (Opcional)',
-                      prefixIcon: Icon(Icons.person),
-                      border: OutlineInputBorder(),
-                      hintText: 'Selecciona un usuario',
-                    ),
-                    items: [
-                      const DropdownMenuItem<User>(
-                        value: null,
-                        child: Text('Sin asignar'),
-                      ),
-                      ..._usuarios.map((usuario) {
-                        return DropdownMenuItem<User>(
-                          value: usuario,
-                          child: Row(
-                            children: [
-                              Icon(
-                                usuario.rol == Rol.tecnico
-                                    ? Icons.engineering
-                                    : Icons.person,
-                                color: usuario.rol == Rol.tecnico
-                                    ? Colors.blue
-                                    : Colors.green,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  '${usuario.nombre} (${usuario.rol.displayName})',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ],
-                    onChanged: _isLoading
-                        ? null
-                        : (value) {
-                            setState(() {
-                              _usuarioSeleccionado = value;
-                            });
-                          },
-                  ),
             const SizedBox(height: 32),
 
             // Botón Guardar
