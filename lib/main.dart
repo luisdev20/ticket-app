@@ -4,6 +4,8 @@ import 'package:ticket_app/models/ticket.dart';
 import 'package:ticket_app/services/ticket_service.dart';
 import 'package:ticket_app/screens/create_ticket_screen.dart';
 import 'package:ticket_app/screens/login_screen.dart';
+import 'package:ticket_app/screens/splash_screen.dart';
+import 'package:ticket_app/screens/ticket_detail_screen.dart';
 
 void main() {
   runApp(const TicketApp());
@@ -20,7 +22,7 @@ class TicketApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }
@@ -252,11 +254,9 @@ class _TicketListScreenState extends State<TicketListScreen> {
       elevation: 2,
       child: InkWell(
         onTap: () {
-          // TODO: Navegar a detalles del ticket
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Ticket #${ticket.id}: ${ticket.titulo}'),
-              duration: const Duration(seconds: 1),
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => TicketDetailScreen(ticket: ticket),
             ),
           );
         },

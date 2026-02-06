@@ -1,4 +1,5 @@
 import 'package:ticket_app/models/user.dart';
+import 'package:ticket_app/models/category_model.dart';
 
 /// Modelo de Ticket que refleja la entidad Java del backend.
 /// 
@@ -26,6 +27,9 @@ class Ticket {
   /// Usuario que creó el ticket (opcional)
   final User? usuario;
 
+  /// Categoría del ticket (opcional)
+  final Category? categoria;
+
   Ticket({
     this.id,
     required this.titulo,
@@ -34,6 +38,7 @@ class Ticket {
     required this.estado,
     this.fechaCreacion,
     this.usuario,
+    this.categoria,
   });
 
   /// Crea un Ticket desde un JSON recibido de la API
@@ -50,6 +55,9 @@ class Ticket {
       usuario: json['usuario'] != null
           ? User.fromJson(json['usuario'] as Map<String, dynamic>)
           : null,
+      categoria: json['categoria'] != null
+          ? Category.fromJson(json['categoria'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -64,6 +72,7 @@ class Ticket {
       if (fechaCreacion != null)
         'fechaCreacion': fechaCreacion!.toIso8601String(),
       if (usuario != null) 'usuario': {'id': usuario!.id},
+      if (categoria != null) 'categoria': {'id': categoria!.id},
     };
   }
 

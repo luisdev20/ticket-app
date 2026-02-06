@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ticket_app/models/ticket.dart';
 import 'package:ticket_app/models/user.dart';
+import 'package:ticket_app/models/category_model.dart';
 import 'package:ticket_app/services/ticket_service.dart';
+import 'package:ticket_app/services/category_service.dart';
 
 class CreateTicketScreen extends StatefulWidget {
   const CreateTicketScreen({super.key});
@@ -19,12 +21,16 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
   Prioridad _prioridadSeleccionada = Prioridad.media;
   Estado _estadoSeleccionado = Estado.abierto;
   bool _isLoading = false;
+  bool _isLoadingCategories = true;
   int? _loggedInUserId;
+  List<Category> _categorias = [];
+  Category? _categoriaSeleccionada;
 
   @override
   void initState() {
     super.initState();
     _loadLoggedInUser();
+    _loadCategorias();
   }
 
   Future<void> _loadLoggedInUser() async {
@@ -34,7 +40,27 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
     });
   }
 
-
+  Future<void> _loadCategorias() async {
+    try {
+      final categorias = await CategoryService.fetchCategories();
+      setState(() {
+        _categorias = categorias;
+        _isLoadingCategories = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingCategories = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar categorías: $e'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -60,6 +86,7 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
       usuario: _loggedInUserId != null 
           ? User(id: _loggedInUserId, nombre: '', email: '', rol: Rol.cliente)
           : null,
+      categoria: _categoriaSeleccionada,
     );
 
     try {
@@ -226,6 +253,44 @@ class _CreateTicketScreenState extends State<CreateTicketScreen> {
                       }
                     },
             ),
+            const SizedBox(height: 16),
+
+            // Selector de Categoría
+            _isLoadingCategories
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                : DropdownButtonFormField<Category>(
+                    value: _categoriaSeleccionada,
+                    decoration: const InputDecoration(
+                      labelText: 'Categoría (Opcional)',
+                      prefixIcon: Icon(Icons.category),
+                      border: OutlineInputBorder(),
+                      hintText: 'Selecciona una categoría',
+                    ),
+                    items: [
+                      const DropdownMenuItem<Category>(
+                        value: null,
+                        child: Text('Sin categoría'),
+                      ),
+                      ..._categorias.map((categoria) {
+                        return DropdownMenuItem<Category>(
+                          value: categoria,
+                          child: Text(categoria.nombre),
+                        );
+                      }).toList(),
+                    ],
+                    onChanged: _isLoading
+                        ? null
+                        : (value) {
+                            setState(() {
+                              _categoriaSeleccionada = value;
+                            });
+                          },
+                  ),
             const SizedBox(height: 32),
 
             // Botón Guardar
